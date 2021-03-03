@@ -1,3 +1,6 @@
+#define WIZARDCREWSCALER 50 // Every X amount of crew, adjust how many times WIZARDMAGICINCREMENTOR is applied
+#define WIZARDMAGICINCREMENTOR 1 // How many spellpoints wanted to be added when crew passes WIZARDCREWSCALER
+
 /datum/game_mode
 	var/list/datum/mind/wizards = list()
 	var/list/datum/mind/apprentices = list()
@@ -45,7 +48,7 @@
 	for(var/datum/mind/wizard in wizards)
 		log_game("[key_name(wizard)] has been selected as a Wizard")
 		forge_wizard_objectives(wizard)
-		equip_wizard(wizard.current)
+		equip_wizard(wizard.current, wizard_scaling_logic())
 		INVOKE_ASYNC(src, .proc/name_wizard, wizard.current)
 		greet_wizard(wizard)
 		if(use_huds)
@@ -120,7 +123,7 @@
 		wizard_mob.spell_list += new /obj/effect/proc_holder/spell/targeted/ethereal_jaunt(usr)
 */
 
-/datum/game_mode/proc/equip_wizard(mob/living/carbon/human/wizard_mob)
+/datum/game_mode/proc/equip_wizard(mob/living/carbon/human/wizard_mob, var/scalingLogic=0)
 	if(!istype(wizard_mob))
 		return
 
@@ -151,6 +154,7 @@
 		wizard_mob.equip_to_slot_or_del(new /obj/item/storage/box/survival(wizard_mob), slot_in_backpack)
 	wizard_mob.equip_to_slot_or_del(new /obj/item/teleportation_scroll(wizard_mob), slot_r_store)
 	var/obj/item/spellbook/spellbook = new /obj/item/spellbook(wizard_mob)
+	spellbook.uses += scalingLogic
 	spellbook.owner = wizard_mob
 	wizard_mob.equip_to_slot_or_del(spellbook, slot_l_hand)
 
@@ -288,3 +292,7 @@ Made a proc so this is not repeated 14 (or more) times.*/
 
 /proc/iswizard(mob/living/M as mob)
 	return istype(M) && M.mind && SSticker && SSticker.mode && ((M.mind in SSticker.mode.wizards) || (M.mind in SSticker.mode.apprentices))
+
+/proc/wizard_scaling_logic()
+	var/danger = 101
+	return (round_down(danger/WIZARDCREWSCALER) * WIZARDMAGICINCREMENTOR)
